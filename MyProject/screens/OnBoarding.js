@@ -1,12 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useState } from "react";
+import React,{ useContext, useState } from "react";
 import { View, Image, StyleSheet, Text, TextInput, Pressable } from "react-native";
+import { UserContext } from "../context/UserContext";
 
-export default function OnBoarding({navigation}){
+export default function OnBoarding(){
     const [email, changeEmail] = useState('');
     const [name, changeName] = useState('');   
-
-
+    const { setIsLoggedIn} = useContext(UserContext);
 
     return(
         <View style={onBoardingStyles.container}>
@@ -28,14 +28,28 @@ export default function OnBoarding({navigation}){
                 </View>
             </View>
             <View style={onBoardingStyles.footerContainer}>
-            <Pressable
-                style={onBoardingStyles.button}
-                onPress={async () => {
-                await AsyncStorage.multiSet([['@loggedIn','true'],['@email', email],['@name',name]]);
-                navigation.navigate('Profile');
-            }}
-                disabled={email=='' || name == ''}
-            >
+                <Pressable
+                    style={onBoardingStyles.button}
+                    onPress={async () => {
+                        const personalInfo = JSON.stringify(
+                            {
+                                profileImage: '',
+                                email: email,
+                                firstName: name,
+                                lastName: '',
+                                phone: '',
+                                emailNotifications: {
+                                    orderStatuses: false,
+                                    passwordChanges: false,
+                                    specialOffers: false,
+                                    newsletter: false
+                                }
+                            });
+                        await AsyncStorage.multiSet([['@loggedIn', 'true'], ['@personal_info', personalInfo]]);
+                        setIsLoggedIn(true)
+                    }}
+                    disabled={email == '' || name == ''}
+                >
                 <Text style={onBoardingStyles.buttonText}>{'Next'}</Text>
             </Pressable>
             </View>
@@ -68,7 +82,6 @@ const onBoardingStyles = StyleSheet.create({
         alignItems:'center'
     },
     styleText:{
-        fontFamily:'Karla',
         fontSize:24
     },
     input:{

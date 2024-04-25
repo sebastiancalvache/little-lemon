@@ -1,15 +1,88 @@
 import { View, Text, StyleSheet, Image, Pressable, TextInput, KeyboardAvoidingView, ScrollView } from "react-native";
 import Checkbox from 'expo-checkbox';
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MaskedTextInput } from "react-native-mask-text";
+import * as ImagePicker from 'expo-image-picker';
+import  React, {useContext} from 'react';
+import { UserContext } from "../context/UserContext";
 
-export default function Profile(){
-    const [isChecked, setChecked] = useState(false);
+
+export default function Profile({}){
+
+    
+  const {setIsLoggedIn} = useContext(UserContext);
+
+    const [form, changeForm] = useState({
+        profileImage: '',
+        firstName:'',
+        lastName:'',
+        email:'',
+        phone:'',
+        emailNotifications:{
+            orderStatuses: false,
+            passwordChanges: false,
+            specialOffers: false,
+            newsletter: false
+        }
+
+    });
+
+    useEffect(() => { 
+        (async () => { 
+          try{
+            loadStorageValues();
+          }
+          catch(error)
+          {
+            console.error(`An error occurred: ${error.message}`);
+          }
+        })(); 
+      }, []); 
+
+      const loadStorageValues = async() => {
+        value = JSON.parse(await AsyncStorage.getItem('@personal_info'));
+        console.log('value',value)
+
+        changeForm({
+            profileImage: value.profileImage,
+            email: value.email,
+            firstName: value.firstName,
+            lastName: value.lastName,
+            phone: value.phone,
+            emailNotifications: {
+                orderStatuses: value.emailNotifications.orderStatuses,
+                passwordChanges: value.emailNotifications.passwordChanges,
+                specialOffers: value.emailNotifications.specialOffers,
+                newsletter: value.emailNotifications.newsletter
+            }
+        });
+      }
+
+      const pickImage = async () => {
+        // No permissions request is necessary for launching the image library
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 1,
+        });
+    
+          if (!result.canceled) {
+              changeForm((prev) => ({
+                  ...prev,
+                  profileImage: result.assets[0].uri,
+              })
+              );
+          }
+      };      
     return(
         <ScrollView style={ProfileStyles.container}>
             <View style={ProfileStyles.logo}>
 
-                <Image style={ProfileStyles.img} source={require('../assets/Logo.png')} resizeMode='stretch'></Image>
-                <Image style={ProfileStyles.profileImg} source={require('../assets/Profile.png')} resizeMode='stretch' ></Image>
+            <Image style={ProfileStyles.img} source={require('../assets/Logo.png')} resizeMode='stretch'></Image>
+                {form.profileImage !=='' && <Image source={{ uri: form.profileImage }} style={ProfileStyles.avatarImgHeader} resizeMode='stretch'/>}
+                {form.profileImage =='' && <Text style={[ProfileStyles.emptyPictureHeader]}>{form.firstName.slice(0,1).concat(form.lastName.slice(0,1))}</Text>}
             </View>
             <View style={ProfileStyles.personalInfo}>
 
@@ -19,11 +92,13 @@ export default function Profile(){
                 <View style={ProfileStyles.avatar}>
                     <Text style={ProfileStyles.label}>Avatar</Text>
                     <View style={ProfileStyles.avatarRow}>
-                        <Image style={ProfileStyles.avatarImg} source={require('../assets/Profile.png')} resizeMode='stretch' ></Image>
+                        {form.profileImage !=='' && <Image source={{ uri: form.profileImage }} style={ProfileStyles.avatarImg} resizeMode='stretch'/>}
+                        {form.profileImage =='' && <Text style={[ProfileStyles.emptyPicture]}>{form.firstName.slice(0,1).concat(form.lastName.slice(0,1))}</Text>}
+                        
                         <Pressable
                             style={ProfileStyles.button}
                             onPress={async () => {
-
+                                pickImage();
                             }}
                         >
                             <Text style={[ProfileStyles.buttonText]}>{'Change'}</Text>
@@ -31,7 +106,11 @@ export default function Profile(){
                         <Pressable
                             style={[ProfileStyles.button,{backgroundColor:'white', borderBlockColor:'#495E57'}]}
                             onPress={async () => {
-
+                                changeForm((prev) => ({
+                                    ...prev,
+                                    profileImage: '',
+                                })
+                                );
                             }}
                         >
                             <Text style={[ProfileStyles.buttonText,{color:'#495E57'}]}>{'Remove'}</Text>
@@ -41,63 +120,103 @@ export default function Profile(){
 
                 <View style={ProfileStyles.textInput}>
                     <Text style={ProfileStyles.label}>First Name</Text>
-                    <TextInput style={ProfileStyles.input} placeholder="First name" textAlign="left">
+                    <TextInput style={ProfileStyles.input} placeholder="First name" textAlign="left" value={form.firstName}
+                        onChangeText={(value) => changeForm((prev) => ({
+                            ...prev,
+                            firstName: value,
+                        })
+                        )}>
                     </TextInput>
                 </View>
 
                 <View style={ProfileStyles.textInput}>
                     <Text style={ProfileStyles.label}>Last Name</Text>
-                    <TextInput style={ProfileStyles.input} placeholder="Last name" textAlign="left">
+                    <TextInput style={ProfileStyles.input} placeholder="Last name" textAlign="left" value={form.lastName} 
+                        onChangeText={(value) => changeForm((prev) => ({
+                            ...prev,
+                            lastName: value,
+                        })
+                    )}>
                     </TextInput>
                 </View>
 
                 <View style={ProfileStyles.textInput}>
                     <Text style={ProfileStyles.label}>Email</Text>
-                    <TextInput style={ProfileStyles.input} placeholder="Email" textAlign="left" keyboardType="email-address">
+                    <TextInput style={ProfileStyles.input} placeholder="Email" textAlign="left" keyboardType="email-address" value={form.email} 
+                        onChangeText={(value) => changeForm((prev) => ({
+                            ...prev,
+                            email: value,
+                        })
+                    )}>
                     </TextInput>
                 </View>
 
                 <View style={ProfileStyles.textInput}>
                     <Text style={ProfileStyles.label}>Phone number</Text>
-                    <TextInput style={ProfileStyles.input} placeholder="Phone number" textAlign="left" keyboardType="phone-pad">
-                    </TextInput>
+                    <MaskedTextInput style={ProfileStyles.input}
+                    textAlign="left"
+                        mask='+1 999-999-9999'
+                        keyboardType="phone-pad"
+                        value={form.phone}
+                        onChangeText={(formatted,extracted) => changeForm((prev) => ({
+                            ...prev,
+                            phone: extracted,
+                        })
+                    )}
+                    />
                 </View>
 
                 <Text style={ProfileStyles.subtitle}>Email notifications</Text>
 
                 <View style={ProfileStyles.checkboxContainer}>
-                <Checkbox
-                    style={ProfileStyles.checkbox}
-                    value={isChecked}
-                    onValueChange={setChecked}
-                    color={isChecked ? '#495E57' : undefined}
+                    <Checkbox
+                        style={ProfileStyles.checkbox}
+                        value={form.emailNotifications.orderStatuses}
+                        onValueChange={(value) => changeForm((prev) => ({
+                            ...prev,
+                            emailNotifications: { ...prev.emailNotifications, orderStatuses: value }
+                        })
+                        )}
+                        color={form.emailNotifications.orderStatuses ? '#495E57' : undefined}
                     />
                     <Text style={ProfileStyles.checkLabel}>Order statuses</Text>
                 </View>
                 <View style={ProfileStyles.checkboxContainer}>
-                <Checkbox
-                    style={ProfileStyles.checkbox}
-                    value={isChecked}
-                    onValueChange={setChecked}
-                    color={isChecked ? '#495E57' : undefined}
+                    <Checkbox
+                        style={ProfileStyles.checkbox}
+                        value={form.emailNotifications.passwordChanges}
+                        onValueChange={(value) => changeForm((prev) => ({
+                            ...prev,
+                            emailNotifications: { ...prev.emailNotifications, passwordChanges: value }
+                        })
+                        )}
+                        color={form.emailNotifications.passwordChanges ? '#495E57' : undefined}
                     />
                     <Text style={ProfileStyles.checkLabel}>Password changes</Text>
                 </View>
                 <View style={ProfileStyles.checkboxContainer}>
                 <Checkbox
                     style={ProfileStyles.checkbox}
-                    value={isChecked}
-                    onValueChange={setChecked}
-                    color={isChecked ? '#495E57' : undefined}
+                    value={form.emailNotifications.specialOffers}
+                    onValueChange={(value) => changeForm((prev) => ({
+                        ...prev,
+                        emailNotifications: { ...prev.emailNotifications, specialOffers: value }
+                    })
+                    )}
+                    color={form.emailNotifications.specialOffers ? '#495E57' : undefined}
                     />
                     <Text style={ProfileStyles.checkLabel}>Special Offers</Text>
                 </View>
                 <View style={ProfileStyles.checkboxContainer}>
                 <Checkbox
                     style={ProfileStyles.checkbox}
-                    value={isChecked}
-                    onValueChange={setChecked}
-                    color={isChecked ? '#495E57' : undefined}
+                    value={form.emailNotifications.newsletter}
+                    onValueChange={(value) => changeForm((prev) => ({
+                        ...prev,
+                        emailNotifications: { ...prev.emailNotifications, newsletter: value }
+                    })
+                    )}
+                    color={form.emailNotifications.newsletter ? '#495E57' : undefined}
                     />
                     <Text style={ProfileStyles.checkLabel}>Newsletter</Text>
                 </View>
@@ -105,7 +224,8 @@ export default function Profile(){
                 <Pressable
                     style={ProfileStyles.logoutButton}
                     onPress={async () => {
-
+                        await AsyncStorage.setItem('@loggedIn', 'false');
+                        setIsLoggedIn(false);
                     }}
                 >
                     <Text style={[ProfileStyles.buttonText, { color: 'black' }]}>{'Log out'}</Text>
@@ -117,7 +237,7 @@ export default function Profile(){
             <Pressable
                     style={[ProfileStyles.button, { backgroundColor: 'white', borderBlockColor: '#495E57' }]}
                     onPress={async () => {
-
+                        loadStorageValues();
                     }}
                 >
                     <Text style={[ProfileStyles.buttonText, { color: '#495E57' }]}>{'Discard Changes'}</Text>
@@ -125,7 +245,9 @@ export default function Profile(){
                 <Pressable
                     style={ProfileStyles.button}
                     onPress={async () => {
-
+                        console.log('form',JSON.stringify(form))
+                        await AsyncStorage.setItem( '@personal_info', JSON.stringify(form));
+                        console.log('saved Item',JSON.parse(await AsyncStorage.getItem('@personal_info')));
                     }}
                 >
                     <Text style={[ProfileStyles.buttonText]}>{'Save Changes'}</Text>
@@ -153,7 +275,8 @@ const ProfileStyles = StyleSheet.create({
     },
     img:{
         width: '60%',
-        height: '65%'
+        height: '65%',
+        marginRight: '9%'
     },
     profileImg:{
         width: '15%',
@@ -173,7 +296,6 @@ const ProfileStyles = StyleSheet.create({
     avatarImg:{
         flex:0.4,
         height:80,
-        //width:'5000%'
         borderRadius:200,
     },
     button: {
@@ -248,5 +370,23 @@ const ProfileStyles = StyleSheet.create({
     subtitle:{
         fontSize: 22,
         fontWeight: 'bold'
-    }
+    },
+    emptyPicture:{
+        fontSize:26,
+        borderRadius:100,
+        backgroundColor: '#F4CE14', 
+        padding:20
+    },
+    emptyPictureHeader:{
+        fontSize:26,
+        borderRadius:100,
+        backgroundColor: '#F4CE14', 
+        padding:10,
+        marginRight:'1%'
+    },
+    avatarImgHeader:{
+        flex:0.5,
+        height:60,
+        borderRadius:200,
+    },
 });
