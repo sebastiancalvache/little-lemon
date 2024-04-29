@@ -6,12 +6,13 @@ import { MaskedTextInput } from "react-native-mask-text";
 import * as ImagePicker from 'expo-image-picker';
 import  React, {useContext} from 'react';
 import { UserContext } from "../context/UserContext";
+import Header from "../components/Header";
 
 
-export default function Profile({}){
+export default function Profile({navigation}){
 
     
-  const {setIsLoggedIn} = useContext(UserContext);
+  const {setIsLoggedIn, userInfo, setUserInfo, setMenu, setFilters, setCategories} = useContext(UserContext);
 
     const [form, changeForm] = useState({
         profileImage: '',
@@ -41,20 +42,19 @@ export default function Profile({}){
       }, []); 
 
       const loadStorageValues = async() => {
-        value = JSON.parse(await AsyncStorage.getItem('@personal_info'));
-        console.log('value',value)
+        value = userInfo;
 
         changeForm({
-            profileImage: value.profileImage,
-            email: value.email,
-            firstName: value.firstName,
-            lastName: value.lastName,
-            phone: value.phone,
+            profileImage: userInfo.profileImage,
+            email: userInfo.email,
+            firstName: userInfo.firstName,
+            lastName: userInfo.lastName,
+            phone: userInfo.phone,
             emailNotifications: {
-                orderStatuses: value.emailNotifications.orderStatuses,
-                passwordChanges: value.emailNotifications.passwordChanges,
-                specialOffers: value.emailNotifications.specialOffers,
-                newsletter: value.emailNotifications.newsletter
+                orderStatuses: userInfo.emailNotifications.orderStatuses,
+                passwordChanges: userInfo.emailNotifications.passwordChanges,
+                specialOffers: userInfo.emailNotifications.specialOffers,
+                newsletter: userInfo.emailNotifications.newsletter
             }
         });
       }
@@ -78,12 +78,7 @@ export default function Profile({}){
       };      
     return(
         <ScrollView style={ProfileStyles.container}>
-            <View style={ProfileStyles.logo}>
-
-            <Image style={ProfileStyles.img} source={require('../assets/Logo.png')} resizeMode='stretch'></Image>
-                {form.profileImage !=='' && <Image source={{ uri: form.profileImage }} style={ProfileStyles.avatarImgHeader} resizeMode='stretch'/>}
-                {form.profileImage =='' && <Text style={[ProfileStyles.emptyPictureHeader]}>{form.firstName.slice(0,1).concat(form.lastName.slice(0,1))}</Text>}
-            </View>
+            <Header navigation={navigation}></Header>
             <View style={ProfileStyles.personalInfo}>
 
                 <Text style={ProfileStyles.subtitle}>Personal Information</Text>
@@ -226,6 +221,10 @@ export default function Profile({}){
                     onPress={async () => {
                         await AsyncStorage.setItem('@loggedIn', 'false');
                         setIsLoggedIn(false);
+                        setUserInfo(null);
+                        setMenu([]);
+                        setFilters([]);
+                        setCategories([]);
                     }}
                 >
                     <Text style={[ProfileStyles.buttonText, { color: 'black' }]}>{'Log out'}</Text>
@@ -245,9 +244,8 @@ export default function Profile({}){
                 <Pressable
                     style={ProfileStyles.button}
                     onPress={async () => {
-                        console.log('form',JSON.stringify(form))
+                        setUserInfo(form);
                         await AsyncStorage.setItem( '@personal_info', JSON.stringify(form));
-                        console.log('saved Item',JSON.parse(await AsyncStorage.getItem('@personal_info')));
                     }}
                 >
                     <Text style={[ProfileStyles.buttonText]}>{'Save Changes'}</Text>
@@ -265,18 +263,6 @@ export default function Profile({}){
 const ProfileStyles = StyleSheet.create({
     container: {
         flex: 1
-    },
-    logo:{
-        height:80,
-        flexDirection:'row',
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent:'flex-end'
-    },
-    img:{
-        width: '60%',
-        height: '65%',
-        marginRight: '9%'
     },
     profileImg:{
         width: '15%',
@@ -383,10 +369,5 @@ const ProfileStyles = StyleSheet.create({
         backgroundColor: '#F4CE14', 
         padding:10,
         marginRight:'1%'
-    },
-    avatarImgHeader:{
-        flex:0.5,
-        height:60,
-        borderRadius:200,
-    },
+    }
 });

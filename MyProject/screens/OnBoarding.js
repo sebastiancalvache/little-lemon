@@ -1,23 +1,25 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React,{ useContext, useState } from "react";
-import { View, Image, StyleSheet, Text, TextInput, Pressable } from "react-native";
+import { View, Image, StyleSheet, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView } from "react-native";
 import { UserContext } from "../context/UserContext";
+import Header from "../components/Header";
 
 export default function OnBoarding(){
     const [email, changeEmail] = useState('');
     const [name, changeName] = useState('');   
-    const { setIsLoggedIn} = useContext(UserContext);
+    const { setIsLoggedIn, setUserInfo} = useContext(UserContext);
 
     return(
+        <>
+        <Header></Header>
+        <KeyboardAvoidingView style={{flex:1}}>
         <View style={onBoardingStyles.container}>
-            <View style={onBoardingStyles.logo}>
-                <Image style={onBoardingStyles.img} source={require('../assets/Logo.png')} resizeMode='cover'></Image>
-            </View>
+            
             <View style={onBoardingStyles.formContainer}>
-                <View style={[onBoardingStyles.formTitle, {paddingTop:45}]}>
+                <View style={onBoardingStyles.titleContainer}>
                     <Text style={onBoardingStyles.styleText}>Let us get to know you</Text>
                 </View>
-                <View style={[onBoardingStyles.formTitle, {gap:15}]}>
+                <View style={onBoardingStyles.inputsContainer}>
                     <Text style={onBoardingStyles.styleText}>First Name</Text>
                     <TextInput style={onBoardingStyles.input} placeholder="First name" textAlign="left" value={name} onChangeText={changeName}>
                     </TextInput>
@@ -31,7 +33,7 @@ export default function OnBoarding(){
                 <Pressable
                     style={onBoardingStyles.button}
                     onPress={async () => {
-                        const personalInfo = JSON.stringify(
+                        const personalInfo = 
                             {
                                 profileImage: '',
                                 email: email,
@@ -44,9 +46,10 @@ export default function OnBoarding(){
                                     specialOffers: false,
                                     newsletter: false
                                 }
-                            });
-                        await AsyncStorage.multiSet([['@loggedIn', 'true'], ['@personal_info', personalInfo]]);
-                        setIsLoggedIn(true)
+                            };
+                        await AsyncStorage.multiSet([['@loggedIn', 'true'], ['@personal_info',  JSON.stringify(personalInfo)]]);
+                        setUserInfo(personalInfo);
+                        setIsLoggedIn(true);
                     }}
                     disabled={email == '' || name == ''}
                 >
@@ -54,35 +57,39 @@ export default function OnBoarding(){
             </Pressable>
             </View>
         </View>
+        </KeyboardAvoidingView>
+        </>
     );
 
 }
 
 const onBoardingStyles = StyleSheet.create({
     container:{
-        
-        flex:1
-        
+        flexDirection:'column',
+        flex:1,
     },
-    logo:{
-        flex: 0.08,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent:'center'
-    },
-    img:{
-        width: 200
+    titleContainer:{
+        height:'60%', 
+        alignItems:'center', 
+        paddingTop:'10%',
+        fontFamily:'Karla'
     },
     formContainer:{
-        flex: 0.72,
+        height:'80%',
+        flexDirection:'column',
         backgroundColor: '#495E57',
     },
-    formTitle:{
-        flex: 0.5,
-        alignItems:'center'
+    inputsContainer:{
+        alignItems:'center',
+        justifyContent:'flex-end', 
+        height:'40%', 
+        paddingBottom:'8%',
+        flexDirection:'column',
+        gap:5
     },
     styleText:{
-        fontSize:24
+        fontSize:24,
+        fontFamily:'Karla'
     },
     input:{
         textAlign: 'center',
@@ -92,19 +99,18 @@ const onBoardingStyles = StyleSheet.create({
         borderWidth: 2,
         borderColor: 'black',
         borderRadius: 8,
-        paddingHorizontal: 10
+        paddingHorizontal: 10,
+        fontFamily:'Karla'
     },
     footerContainer:{
-        flex: 0.2,
-        backgroundColor: 'white',
-        justifyContent:'center',
-        alignItems: 'flex-end'
+        justifyContent:'center', 
+        alignItems:'flex-end', 
+        height:'20%'
     },
     button: {
         fontSize: 22,
         paddingHorizontal: 25,
         marginHorizontal: '10%',
-        //margin: 80,
         backgroundColor: '#495E57',
         borderColor: '#495E57',
         borderWidth: 2,
@@ -114,6 +120,7 @@ const onBoardingStyles = StyleSheet.create({
         color: 'black',
         textAlign: 'center',
         fontSize: 24,
+        fontFamily:'Karla'
     },
 
 })
